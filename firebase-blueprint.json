@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Creator or member profile on Kroma",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "username": { "type": "string", "minLength": 3, "maxLength": 30, "pattern": "^[a-zA-Z0-9_]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "email": { "type": "string", "maxLength": 254 },
+        "avatarUrl": { "type": "string", "maxLength": 1000 },
+        "avatarObjectKey": { "type": "string", "maxLength": 500 },
+        "bannerUrl": { "type": "string", "maxLength": 1000 },
+        "bannerObjectKey": { "type": "string", "maxLength": 500 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "websiteUrl": { "type": "string", "maxLength": 500 },
+        "location": { "type": "string", "maxLength": 100 },
+        "followersCount": { "type": "number" },
+        "followingCount": { "type": "number" },
+        "postsCount": { "type": "number" },
+        "collectionsCount": { "type": "number" },
+        "profileViews": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "username", "displayName", "avatarUrl", "followersCount", "followingCount", "postsCount", "collectionsCount", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A visual discovery post or creative project item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "creatorId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "thumbnailUrl": { "type": "string", "maxLength": 1000 },
+        "aspectRatio": { "type": "number" },
+        "imageWidth": { "type": "number" },
+        "imageHeight": { "type": "number" },
+        "imageMimeType": { "type": "string", "maxLength": 50 },
+        "imageSize": { "type": "number" },
+        "thumbnailWidth": { "type": "number" },
+        "thumbnailHeight": { "type": "number" },
+        "imageObjectKey": { "type": "string", "maxLength": 500 },
+        "thumbnailObjectKey": { "type": "string", "maxLength": 500 },
+        "category": { "type": "string", "maxLength": 60 },
+        "sourceUrl": { "type": "string", "maxLength": 500 },
+        "likesCount": { "type": "number" },
+        "savesCount": { "type": "number" },
+        "viewsCount": { "type": "number" },
+        "uniqueImpressionsCount": { "type": "number" },
+        "linkClicksCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "impressionsBySource": { "type": "object" },
+        "viewsByDevice": { "type": "object" },
+        "viewsBySource": { "type": "object" },
+        "viewsByCountry": { "type": "object" },
+        "isPublished": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "creatorId", "title", "imageUrl", "aspectRatio", "category", "likesCount", "savesCount", "viewsCount", "commentsCount", "isPublished", "createdAt"]
+    },
+    "Collection": {
+      "title": "Collection",
+      "description": "A curated moodboard or visual collection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "isPrivate": { "type": "boolean" },
+        "coverImageUrl": { "type": "string", "maxLength": 1000 },
+        "postsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "isPrivate", "postsCount", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Discussion comment on a visual post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "postId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "postId", "userId", "content", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app system or interaction notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["system", "like", "follow", "save", "comment", "post"] },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "type", "title", "message", "isRead", "createdAt"]
+    },
+    "PostView": {
+      "title": "PostView",
+      "description": "Timestamped record of a user viewing a visual post for lifetime unique view tracking",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "lastViewedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "userId", "lastViewedAt"]
+    },
+    "PostImpression": {
+      "title": "PostImpression",
+      "description": "Lifetime deduplicated record of a user seeing a post card on a discovery surface",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "source": { "type": "string", "maxLength": 64 },
+        "impressedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "userId", "impressedAt", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Public user profile and creator information"
+    },
+    "/users/{userId}/postViews/{postId}": {
+      "schema": { "$ref": "#/entities/PostView" },
+      "description": "Per-user post view tracking records for lifetime deduplication"
+    },
+    "/users/{userId}/postImpressions/{postId}": {
+      "schema": { "$ref": "#/entities/PostImpression" },
+      "description": "Per-user lifetime unique impression / reach deduplication records"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Published visual posts, artwork, and design projects"
+    },
+    "/collections/{collectionId}": {
+      "schema": { "$ref": "#/entities/Collection" },
+      "description": "Curated moodboards and visual boards created by users"
+    },
+    "/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Comments attached to posts"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Notifications delivered to individual users"
+    }
+  }
+}

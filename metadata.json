@@ -1,0 +1,6 @@
+{
+  "name": "Kroma — Visual Discovery & Creative Inspiration",
+  "description": "A modern visual discovery and creative bookmarking platform for designers, artists, and creators to discover, organize, and share visual inspiration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

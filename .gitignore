@@ -1,0 +1,45 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Firebase Admin Service Account credentials & config files
+serviceAccount*.json
+firebase-adminsdk*.json
+firebase-applet-config.json
+
+# AI Studio runtime artifacts
+assets/.aistudio/
+
+# Build outputs
+dist-server/
+
+# Netlify CLI local state
+.netlify/
+
+# Downloaded service-account / GA4 / OAuth private key files
+*-service-account*.json
+*-adminsdk*.json
+ga4-*.json
+*-credentials.json
+*.pem
+*.p8
+*.key
+
+# Local secret / key folders
+secrets/
+keys/
+.credentials/
+.firebase/
+
+# IDE/editor state
+.idea/
+*.suo
+

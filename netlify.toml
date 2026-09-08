@@ -1,0 +1,70 @@
+[build]
+command = "npm run build"
+publish = "dist"
+
+[build.environment]
+SECRETS_SCAN_OMIT_KEYS = "FIREBASE_PROJECT_ID,R2_PUBLIC_URL,VITE_GA_MEASUREMENT_ID,GA4_ANALYTICS_START_DATE"
+SECRETS_SCAN_OMIT_PATHS = "node_modules/**"
+
+[functions]
+directory = "netlify/functions"
+
+[[redirects]]
+from = "/api/media/presign"
+to = "/.netlify/functions/media-presign"
+status = 200
+
+[[redirects]]
+from = "/api/media/upload"
+to = "/.netlify/functions/media-upload"
+status = 200
+
+[[redirects]]
+from = "/api/media/delete"
+to = "/.netlify/functions/media-delete"
+status = 200
+
+[[redirects]]
+from = "/api/media/download"
+to = "/.netlify/functions/media-download"
+status = 200
+
+[[redirects]]
+from = "/api/media/config"
+to = "/.netlify/functions/media-config"
+status = 200
+
+[[redirects]]
+from = "/api/analytics/countries"
+to = "/.netlify/functions/analytics-countries"
+status = 200
+
+[[redirects]]
+from = "/api/analytics/breakdowns"
+to = "/.netlify/functions/analytics-breakdowns"
+status = 200
+
+[[redirects]]
+from = "/api/health"
+to = "/.netlify/functions/health"
+status = 200
+
+[[redirects]]
+from = "/api/cron/publish-scheduled"
+to = "/.netlify/functions/publish-scheduled-posts"
+status = 200
+
+[[redirects]]
+from = "/api/scheduled/publish-due"
+to = "/.netlify/functions/publish-scheduled-posts"
+status = 200
+
+[[redirects]]
+from = "/api/media/*"
+to = "/.netlify/functions/media/:splat"
+status = 200
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200

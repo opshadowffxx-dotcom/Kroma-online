@@ -1,0 +1,292 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ================= User Profiles =================
+    function isValidUser(data) {
+      return (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+             (!('username' in data) || (data.username is string && data.username.size() >= 2 && data.username.size() <= 40)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1000000)) &&
+             (!('avatarObjectKey' in data) || (data.avatarObjectKey is string && data.avatarObjectKey.size() <= 500)) &&
+             (!('bannerUrl' in data) || (data.bannerUrl is string && data.bannerUrl.size() <= 1000000)) &&
+             (!('bannerObjectKey' in data) || (data.bannerObjectKey is string && data.bannerObjectKey.size() <= 500)) &&
+             (!('coverImageUrl' in data) || (data.coverImageUrl is string && data.coverImageUrl.size() <= 1000000)) &&
+             (!('coverImageObjectKey' in data) || (data.coverImageObjectKey is string && data.coverImageObjectKey.size() <= 500)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 1000)) &&
+             (!('websiteUrl' in data) || (data.websiteUrl is string && data.websiteUrl.size() <= 1000)) &&
+             (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
+             (!('followersCount' in data) || data.followersCount is number) &&
+             (!('followingCount' in data) || data.followingCount is number) &&
+             (!('postsCount' in data) || data.postsCount is number) &&
+             (!('collectionsCount' in data) || data.collectionsCount is number) &&
+             (!('profileViews' in data) || data.profileViews is number) &&
+             (!('createdAt' in data) || data.createdAt is string || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is string || data.updatedAt is timestamp);
+    }
+
+    match /users/{userId} {
+      allow read: if true; // Public creator profiles
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) &&
+                      (!('id' in incoming()) || incoming().id == userId) &&
+                      // Ensure new users cannot self-assign privileged flags
+                      (!('isAdmin' in incoming()) || incoming().isAdmin == false) &&
+                      (!('isVerified' in incoming()) || incoming().isVerified == false);
+      allow update: if isSignedIn() && (
+                      // User updating their own profile without self-privilege escalation
+                      (isOwner(userId) && isValidUser(incoming()) &&
+                       !incoming().diff(existing()).affectedKeys().hasAny(['isAdmin', 'isVerified']))
+                      ||
+                      // Allow atomic updates to engagement counters (followersCount/followingCount/postsCount/collectionsCount/profileViews)
+                      incoming().diff(existing()).affectedKeys().hasOnly(['followersCount', 'followingCount', 'postsCount', 'collectionsCount', 'profileViews', 'updatedAt']) ||
+                      incoming().diff(existing()).affectedKeys().hasOnly(['profileViews'])
+                    );
+      allow delete: if isOwner(userId);
+
+      // Follows subcollections
+      match /following/{targetUid} {
+        allow read: if true;
+        allow create, delete: if isOwner(userId);
+      }
+
+      match /followers/{sourceUid} {
+        allow read: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == sourceUid;
+      }
+
+      // Liked posts subcollection for user
+      match /likedPosts/{postId} {
+        allow read: if isOwner(userId);
+        allow create, delete: if isOwner(userId);
+      }
+
+      // Saved posts subcollection for user
+      match /savedPosts/{postId} {
+        allow read: if isOwner(userId);
+        allow create, delete: if isOwner(userId);
+      }
+
+      // Post views subcollection for user (deduplicated lifetime view tracking)
+      match /postViews/{postId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId);
+      }
+
+      // Post impressions subcollection for user (deduplicated lifetime reach / impression tracking)
+      match /postImpressions/{postId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId);
+      }
+    }
+
+    // ================= Posts =================
+    function isValidPost(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.creatorId is string && data.creatorId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 500 &&
+             data.imageUrl is string && data.imageUrl.size() <= 1000000 &&
+             data.aspectRatio is number &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('ctaLabel' in data) || (data.ctaLabel is string && data.ctaLabel.size() <= 100)) &&
+             (!('isAIGenerated' in data) || data.isAIGenerated is bool) &&
+             (!('imageAltText' in data) || (data.imageAltText is string && data.imageAltText.size() <= 1000)) &&
+             (!('publishStatus' in data) || (data.publishStatus is string && data.publishStatus.size() <= 32)) &&
+             (!('scheduledPublishAt' in data) || data.scheduledPublishAt is timestamp || (data.scheduledPublishAt is string && data.scheduledPublishAt.size() <= 100)) &&
+             (!('publishedAt' in data) || data.publishedAt is timestamp || (data.publishedAt is string && data.publishedAt.size() <= 100)) &&
+             (!('likesCount' in data) || data.likesCount is number) &&
+             (!('savesCount' in data) || data.savesCount is number) &&
+             (!('viewsCount' in data) || data.viewsCount is number) &&
+             (!('uniqueImpressionsCount' in data) || data.uniqueImpressionsCount is number) &&
+             (!('linkClicksCount' in data) || data.linkClicksCount is number) &&
+             (!('commentsCount' in data) || data.commentsCount is number) &&
+             (!('isPublished' in data) || data.isPublished is bool) &&
+             (!('createdAt' in data) || data.createdAt is string || data.createdAt is timestamp) &&
+             (!('creator' in data) || data.creator is map) &&
+             (!('imageWidth' in data) || data.imageWidth is number) &&
+             (!('imageHeight' in data) || data.imageHeight is number) &&
+             (!('imageMimeType' in data) || (data.imageMimeType is string && data.imageMimeType.size() <= 100)) &&
+             (!('imageSize' in data) || data.imageSize is number) &&
+             (!('thumbnailWidth' in data) || data.thumbnailWidth is number) &&
+             (!('thumbnailHeight' in data) || data.thumbnailHeight is number) &&
+             (!('imageObjectKey' in data) || (data.imageObjectKey is string && data.imageObjectKey.size() <= 500)) &&
+             (!('thumbnailObjectKey' in data) || (data.thumbnailObjectKey is string && data.thumbnailObjectKey.size() <= 500)) &&
+             (!('isFeatured' in data) || data.isFeatured is bool) &&
+             (!('searchTokens' in data) || data.searchTokens is list) &&
+             (!('tags' in data) || data.tags is list) &&
+             (!('styleTags' in data) || data.styleTags is list) &&
+             (!('toolsUsed' in data) || data.toolsUsed is list) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
+             (!('thumbnailUrl' in data) || (data.thumbnailUrl is string && data.thumbnailUrl.size() <= 1000000)) &&
+             (!('sourceUrl' in data) || (data.sourceUrl is string && data.sourceUrl.size() <= 4096)) &&
+             (!('viewsByDevice' in data) || data.viewsByDevice is map) &&
+             (!('viewsBySource' in data) || data.viewsBySource is map) &&
+             (!('viewsByCountry' in data) || data.viewsByCountry is map) &&
+             (!('impressionsBySource' in data) || data.impressionsBySource is map) &&
+             (!('updatedAt' in data) || data.updatedAt is string || data.updatedAt is timestamp);
+    }
+
+    // Helper function for validating viewer interaction counters and telemetry increments
+    function isValidPostViewerUpdate() {
+      let affected = incoming().diff(existing()).affectedKeys();
+      return affected.hasOnly([
+        'likesCount', 'savesCount', 'viewsCount', 'uniqueImpressionsCount',
+        'linkClicksCount', 'commentsCount', 'viewsByDevice', 'viewsBySource',
+        'viewsByCountry', 'impressionsBySource', 'updatedAt'
+      ]) &&
+      // Enforce scalar increment of +1 on telemetry counters when affected
+      (!affected.hasAny(['viewsCount']) || incoming().viewsCount == (('viewsCount' in existing() && existing().viewsCount is number) ? existing().viewsCount + 1 : 1)) &&
+      (!affected.hasAny(['uniqueImpressionsCount']) || incoming().uniqueImpressionsCount == (('uniqueImpressionsCount' in existing() && existing().uniqueImpressionsCount is number) ? existing().uniqueImpressionsCount + 1 : 1)) &&
+      (!affected.hasAny(['linkClicksCount']) || incoming().linkClicksCount == (('linkClicksCount' in existing() && existing().linkClicksCount is number) ? existing().linkClicksCount + 1 : 1)) &&
+      // Interaction counters must remain valid numbers
+      (!affected.hasAny(['likesCount']) || incoming().likesCount is number) &&
+      (!affected.hasAny(['savesCount']) || incoming().savesCount is number) &&
+      (!affected.hasAny(['commentsCount']) || incoming().commentsCount is number);
+    }
+
+    match /posts/{postId} {
+      // Public feed can read published posts; creators can read their own scheduled/unpublished posts
+      allow read: if (resource.data.isPublished == true) || (isSignedIn() && resource.data.creatorId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(postId) && isValidPost(incoming()) &&
+                      incoming().creatorId == request.auth.uid;
+      allow update: if (
+                      (isSignedIn() && existing().creatorId == request.auth.uid && isValidPost(incoming())) ||
+                      // Allow authenticated atomic updates to interaction counters, view telemetry, and unique impressions
+                      (isSignedIn() && isValidPostViewerUpdate())
+                    );
+      allow delete: if isSignedIn() && existing().creatorId == request.auth.uid;
+
+      // Post Likes subcollection
+      match /likes/{userId} {
+        allow read: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      // Post Comments subcollection
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn() && isValidId(commentId);
+        allow update, delete: if isSignedIn() && existing().authorId == request.auth.uid;
+      }
+
+      // Post Daily Analytics subcollection for aggregate time-series
+      match /analyticsDaily/{dateId} {
+        // Only post owner can read daily analytics
+        allow read: if isSignedIn() && (
+          ('creatorId' in resource.data && resource.data.creatorId == request.auth.uid) ||
+          get(/databases/$(database)/documents/posts/$(postId)).data.creatorId == request.auth.uid
+        );
+        // Writing is restricted strictly to authenticated users with controlled schema and telemetry maps
+        allow create: if isSignedIn() && request.resource.data.keys().hasOnly([
+          'date', 'postId', 'creatorId', 'views', 'impressions', 'uniqueImpressions', 'linkClicks', 'likes', 'saves', 'comments', 'viewsByDevice', 'viewsBySource', 'viewsByCountry', 'impressionsBySource', 'updatedAt'
+        ]);
+        allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'date', 'postId', 'creatorId', 'views', 'impressions', 'uniqueImpressions', 'linkClicks', 'likes', 'saves', 'comments', 'viewsByDevice', 'viewsBySource', 'viewsByCountry', 'impressionsBySource', 'updatedAt'
+        ]);
+      }
+    }
+
+    // ================= Collections =================
+    function isValidCollection(data) {
+      return (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             (!('isPrivate' in data) || data.isPrivate is bool) &&
+             (!('postsCount' in data) || data.postsCount is number) &&
+             (!('createdAt' in data) || data.createdAt is string) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 500)) &&
+             (!('coverImageUrl' in data) || (data.coverImageUrl is string && data.coverImageUrl.size() <= 1000000)) &&
+             (!('postIds' in data) || data.postIds is list) &&
+             (!('updatedAt' in data) || data.updatedAt is string);
+    }
+
+    match /collections/{collectionId} {
+      allow read: if resource.data.isPrivate == false || isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isValidId(collectionId) && isValidCollection(incoming()) &&
+                      incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidCollection(incoming()) &&
+                      (existing().userId == request.auth.uid || incoming().userId == request.auth.uid);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // ================= Top-level Comments (Backward Compatibility) =================
+    function isValidTopLevelComment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.postId is string && data.postId.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 1000 &&
+             data.createdAt is string;
+    }
+
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(commentId) && isValidTopLevelComment(incoming()) &&
+                      incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidTopLevelComment(incoming()) &&
+                      incoming().postId == existing().postId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    // ================= Notifications =================
+    function isValidNotification(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.type is string &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 300 &&
+             data.isRead is bool &&
+             data.createdAt is string;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming());
+      allow update: if isOwner(existing().userId) && isValidNotification(incoming()) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // ================= Search Queries (Aggregate Popularity) =================
+    function isValidSearchQuery(data) {
+      return data.query is string && data.query.size() >= 1 && data.query.size() <= 100 &&
+             data.normalizedQuery is string && data.normalizedQuery.size() >= 1 && data.normalizedQuery.size() <= 100 &&
+             data.searchCount is number &&
+             (!('createdAt' in data) || data.createdAt is string) &&
+             (!('lastSearchedAt' in data) || data.lastSearchedAt is string);
+    }
+
+    match /searchQueries/{queryId} {
+      allow read: if true;
+      allow create: if isValidId(queryId) && isValidSearchQuery(incoming()) && incoming().searchCount == 1;
+      allow update: if isValidSearchQuery(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['searchCount', 'lastSearchedAt', 'query', 'normalizedQuery']) &&
+                       incoming().searchCount >= existing().searchCount;
+      allow delete: if false;
+    }
+  }
+}

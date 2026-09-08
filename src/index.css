@@ -1,0 +1,155 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Light theme (default) */
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #F5F4F1;
+  --color-bg: #FAFAF8;
+  --color-border: #E8E6E1;
+  --color-text-primary: #1A1815;
+  --color-text-secondary: #6B6863;
+  --color-text-muted: #9B9791;
+
+  /* Accent (used sparingly: primary buttons, active states, like/heart fill, links) */
+  --color-accent: #E8462F;
+  --color-accent-hover: #D13A25;
+  --color-accent-soft: #FDEDE9;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 2px rgba(20,18,15,0.04), 0 2px 8px rgba(20,18,15,0.04);
+  --shadow-elevated: 0 4px 12px rgba(20,18,15,0.08), 0 12px 32px rgba(20,18,15,0.10);
+  --shadow-premium: 0 8px 24px rgba(20,18,15,0.10), 0 2px 6px rgba(20,18,15,0.06);
+}
+
+.dark {
+  --color-surface: #1A1A1D;
+  --color-surface-elevated: #232326;
+  --color-bg: #111113;
+  --color-border: #2C2C30;
+  --color-text-primary: #F5F4F2;
+  --color-text-secondary: #A8A6A2;
+  --color-text-muted: #6E6C69;
+
+  --color-accent: #E8462F;
+  --color-accent-hover: #F05A42;
+  --color-accent-soft: #3A1D17;
+
+  --shadow-soft: 0 1px 2px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.20);
+  --shadow-elevated: 0 4px 14px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.30);
+  --shadow-premium: 0 8px 24px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.25);
+}
+
+@layer base {
+  html {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    letter-spacing: -0.011em;
+  }
+
+  /* Retain clean alias mapped directly to Inter */
+  .font-display {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom scrollbar for clean UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.45);
+}
+
+/* Hide scrollbars while preserving touch and scroll gestures */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Shimmer animation for lazy load skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(240,240,240,0.8) 0%, rgba(225,225,225,0.9) 50%, rgba(240,240,240,0.8) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, rgba(30,30,30,0.8) 0%, rgba(45,45,45,0.9) 50%, rgba(30,30,30,0.8) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Heart like micro-interaction keyframes */
+@keyframes heartPop {
+  0% {
+    transform: scale(0.92);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes heartFillUp {
+  0% {
+    clip-path: inset(100% 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.animate-heart-pop {
+  animation: heartPop 320ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-heart-fill {
+  animation: heartFillUp 280ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-heart-pop {
+    animation: none !important;
+  }
+  .animate-heart-fill {
+    animation: none !important;
+    clip-path: inset(0 0 0 0) !important;
+  }
+}
+
